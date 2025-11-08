@@ -11,19 +11,6 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.1].define(version: 2025_11_08_223734) do
-  create_table "interactions", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "interaction_type", null: false
-    t.integer "operator_id", null: false
-    t.string "operator_type", null: false
-    t.integer "target_id", null: false
-    t.string "target_type", null: false
-    t.datetime "updated_at", null: false
-    t.index ["operator_type", "operator_id", "interaction_type", "target_type", "target_id"], name: "index_unique_interaction", unique: true
-    t.index ["operator_type", "operator_id"], name: "index_interactions_on_op_type_and_op_id"
-    t.index ["target_type", "target_id"], name: "index_interactions_on_tgt_type_and_tgt_id"
-  end
-
   create_table "posts", force: :cascade do |t|
     t.text "content"
     t.datetime "created_at", null: false
