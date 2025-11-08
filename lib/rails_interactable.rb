@@ -26,42 +26,52 @@ module RailsInteractable
 
       # 1. 检查互动状态: interacted_by_TYPE?(operator)
       define_method "interacted_by_#{type_sym}?" do |operator|
-        Interaction.exists?(
+        RailsInteractable::Interaction.where(
           target: self,
           operator: operator,
           interaction_type: type_str
-        )
+        ).exists?
       end
 
       # 2. 获取互动者列表: TYPEers
       define_method "#{type_sym}s" do
-        Interaction.joins(:operator)
-                   .where(target: self, interaction_type: type_str)
-                   .pluck('operator_type', 'operator_id')
-                   .map { |otype, oid| otype.constantize.find(oid) }
+        # 重用 interactors 方法的逻辑
+        interactors(type_str)
+      end
+
+      # 2.5. 获取互动者ID列表: TYPE_ids
+      define_method "#{type_sym}_ids" do
+        # 重用 interactors_ids 方法的逻辑
+        interactors_ids(type_str)
       end
 
       # 3. 获取互动计数: TYPE_count
       define_method "#{type_sym}_count" do
-        Interaction.where(target: self, interaction_type: type_str).count
+        RailsInteractable::Interaction.where(target: self, interaction_type: type_str).count
       end
 
       # 4. 添加互动: add_TYPE(operator)
       define_method "add_#{type_sym}" do |operator|
-        Interaction.find_or_create_by!(
+        unless RailsInteractable::Interaction.where(
           target: self,
           operator: operator,
           interaction_type: type_str
-        )
+        ).exists?
+          RailsInteractable::Interaction.create!(
+            target: self,
+            operator: operator,
+            interaction_type: type_str
+          )
+        end
       end
 
       # 5. 移除互动: remove_TYPE(operator)
       define_method "remove_#{type_sym}" do |operator|
-        interaction = Interaction.find_by(
+        interaction = RailsInteractable::Interaction.where(
           target: self,
           operator: operator,
           interaction_type: type_str
-        )
+        ).first
         interaction&.destroy
       end
 
@@ -82,40 +92,69 @@ module RailsInteractable
   end
 
   module InstanceMethods
-    # 通用方法
+    # 通用方法 - 使用 interaction_type
     def interacted_by?(operator, type)
-      Interaction.exists?(
+      RailsInteractable::Interaction.where(
         target: self,
         operator: operator,
         interaction_type: type.to_s
-      )
+      ).exists?
     end
 
+    # 修改 interactors 方法，移除 joins，避免多态关联加载错误
     def interactors(type)
-      Interaction.joins(:operator)
-                 .where(target: self, interaction_type: type.to_s)
-                 .pluck('operator_type', 'operator_id')
-                 .map { |otype, oid| otype.constantize.find(oid) }
+      # 首先获取所有相关交互的 operator_type 和 operator_id
+      operator_data = RailsInteractable::Interaction
+                         .where(target: self, interaction_type: type.to_s)
+                         .pluck(:operator_type, :operator_id)
+
+      # 按 operator_type 分组
+      operators_by_type = operator_data.group_by(&:first).transform_values { |group| group.map(&:last).uniq }
+
+      # 为每种类型批量查询对应的模型实例
+      results = []
+      operators_by_type.each do |operator_type, operator_ids|
+        operator_class = operator_type.constantize
+        instances = operator_class.where(id: operator_ids)
+        results.concat(instances)
+      end
+
+      results
+    end
+
+    # 新增：获取互动者ID列表
+    def interactors_ids(type)
+      RailsInteractable::Interaction
+        .where(target: self, interaction_type: type.to_s)
+        .pluck(:operator_id)
+        .uniq
     end
 
     def interaction_count(type)
-      Interaction.where(target: self, interaction_type: type.to_s).count
+      RailsInteractable::Interaction.where(target: self, interaction_type: type.to_s).count
     end
 
+    # 通用方法
     def add_interaction(operator, type)
-      Interaction.find_or_create_by!(
+      unless RailsInteractable::Interaction.where(
         target: self,
         operator: operator,
         interaction_type: type.to_s
-      )
+      ).exists?
+        RailsInteractable::Interaction.create!(
+          target: self,
+          operator: operator,
+          interaction_type: type.to_s
+        )
+      end
     end
 
     def remove_interaction(operator, type)
-      interaction = Interaction.find_by(
+      interaction = RailsInteractable::Interaction.where(
         target: self,
         operator: operator,
         interaction_type: type.to_s
-      )
+      ).first
       interaction&.destroy
     end
 
