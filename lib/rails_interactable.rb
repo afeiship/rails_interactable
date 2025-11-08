@@ -29,7 +29,7 @@ module RailsInteractable
         Interaction.exists?(
           target: self,
           operator: operator,
-          interaction_interaction_type: type_str
+          interaction_type: type_str
         )
       end
 
