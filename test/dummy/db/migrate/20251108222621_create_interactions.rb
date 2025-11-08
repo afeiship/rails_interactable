@@ -1,5 +1,5 @@
-# lib/generators/rails_interactable/templates/create_interactions.rb
-class CreateInteractions < ActiveRecord::Migration[<%= ActiveRecord::VERSION::MAJOR %>.<%= ActiveRecord::VERSION::MINOR %>]
+# lib/generators/rails_interactable/templates/create_interactions.rb.tt
+class CreateInteractions < ActiveRecord::Migration[8.1]
   def change
     create_table :interactions do |t|
       t.string :type, null: false
