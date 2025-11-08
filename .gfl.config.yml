@@ -1,0 +1,4 @@
+debug: true
+devBaseBranch: dev
+productionBranch: main
+nickname: awesome-gfl
