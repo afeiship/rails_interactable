@@ -29,21 +29,21 @@ module RailsInteractable
         Interaction.exists?(
           target: self,
           operator: operator,
-          type: type_str
+          interaction_interaction_type: type_str
         )
       end
 
       # 2. 获取互动者列表: TYPEers
       define_method "#{type_sym}s" do
         Interaction.joins(:operator)
-                   .where(target: self, type: type_str)
+                   .where(target: self, interaction_type: type_str)
                    .pluck('operator_type', 'operator_id')
                    .map { |otype, oid| otype.constantize.find(oid) }
       end
 
       # 3. 获取互动计数: TYPE_count
       define_method "#{type_sym}_count" do
-        Interaction.where(target: self, type: type_str).count
+        Interaction.where(target: self, interaction_type: type_str).count
       end
 
       # 4. 添加互动: add_TYPE(operator)
@@ -51,7 +51,7 @@ module RailsInteractable
         Interaction.find_or_create_by!(
           target: self,
           operator: operator,
-          type: type_str
+          interaction_type: type_str
         )
       end
 
@@ -60,7 +60,7 @@ module RailsInteractable
         interaction = Interaction.find_by(
           target: self,
           operator: operator,
-          type: type_str
+          interaction_type: type_str
         )
         interaction&.destroy
       end
@@ -87,26 +87,26 @@ module RailsInteractable
       Interaction.exists?(
         target: self,
         operator: operator,
-        type: type.to_s
+        interaction_type: type.to_s
       )
     end
 
     def interactors(type)
       Interaction.joins(:operator)
-                 .where(target: self, type: type.to_s)
+                 .where(target: self, interaction_type: type.to_s)
                  .pluck('operator_type', 'operator_id')
                  .map { |otype, oid| otype.constantize.find(oid) }
     end
 
     def interaction_count(type)
-      Interaction.where(target: self, type: type.to_s).count
+      Interaction.where(target: self, interaction_type: type.to_s).count
     end
 
     def add_interaction(operator, type)
       Interaction.find_or_create_by!(
         target: self,
         operator: operator,
-        type: type.to_s
+        interaction_type: type.to_s
       )
     end
 
@@ -114,7 +114,7 @@ module RailsInteractable
       interaction = Interaction.find_by(
         target: self,
         operator: operator,
-        type: type.to_s
+        interaction_type: type.to_s
       )
       interaction&.destroy
     end
