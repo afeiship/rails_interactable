@@ -2,7 +2,23 @@
 > Add like/favorite interactions to Rails models.
 
 ## Usage
-How to use my plugin.
+1. Use the `rails_interactable` generator to create the migration and model files:
+```sh
+rails g rails_interactable:install
+```
+2. User.rb
+```ruby
+class Post < ApplicationRecord
+  belongs_to :user
+  acts_as_interactable # 这会根据初始化器配置动态添加 like/favorite 等方法
+end
+
+class User < ApplicationRecord
+  has_many :posts, dependent: :destroy
+  # 假设 User 也可能是被互动的目标，或者作为操作者
+  # 但如果 User 只是操作者，这里不需要特别声明
+end
+```
 
 ## Installation
 Add this line to your application's Gemfile:
