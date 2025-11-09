@@ -11,7 +11,7 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.1].define(version: 2025_11_09_003554) do
-  create_table "interactions", force: :cascade do |t|
+  create_table "rails_interactions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "interaction_type", null: false
     t.integer "operator_id", null: false
