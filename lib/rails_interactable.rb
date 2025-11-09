@@ -109,9 +109,19 @@ module RailsInteractable
         targets_of_type(type_str)
       end
 
+      # 1.5. 获取操作者发起的特定类型、特定目标模型的互动对象: TYPEd_of(TargetModel) (e.g., user.liked_of(Post), user.favorited_of(Post))
+      define_method "#{type_sym}d_of" do |target_class|
+        targets_of_type_and_class(type_str, target_class)
+      end
+
       # 2. 获取操作者发起的特定类型互动的目标对象ID: TYPEd_ids (e.g., user.liked_ids, user.favorited_ids)
-      define_method "#{type_sym}d_ids" do
+      define_method "#{type_sym}_ids" do
         target_ids_of_type(type_str)
+      end
+
+      # 2.5. 获取操作者发起的特定类型、特定目标模型的互动对象ID: TYPEd_ids_of(TargetModel) (e.g., user.liked_ids_of(Post), user.favorited_ids_of(Post))
+      define_method "#{type_sym}_ids_of" do |target_class|
+        target_ids_of_type_and_class(type_str, target_class)
       end
 
       # 3. 检查操作者是否对某个目标执行了特定类型互动: TYPEd?(target) (e.g., user.liked?(post), user.favorited?(post))
@@ -230,10 +240,29 @@ module RailsInteractable
       results
     end
 
+    # 新增：获取操作者发起的特定类型、特定目标模型的互动对象
+    def targets_of_type_and_class(type, target_class)
+      target_class_name = target_class.name
+      interaction_target_ids = RailsInteractable::Interaction
+                                  .where(operator: self, interaction_type: type.to_s, target_type: target_class_name)
+                                  .pluck(:target_id)
+
+      target_class.where(id: interaction_target_ids)
+    end
+
     # 通用方法：获取操作者发起的特定类型互动的目标对象ID
     def target_ids_of_type(type)
       RailsInteractable::Interaction
         .where(operator: self, interaction_type: type.to_s)
+        .pluck(:target_id)
+        .uniq
+    end
+
+    # 新增：获取操作者发起的特定类型、特定目标模型的互动对象ID
+    def target_ids_of_type_and_class(type, target_class)
+      target_class_name = target_class.name
+      RailsInteractable::Interaction
+        .where(operator: self, interaction_type: type.to_s, target_type: target_class_name)
         .pluck(:target_id)
         .uniq
     end
