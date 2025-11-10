@@ -1,6 +1,6 @@
 {
   "name": "rails_interactable",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Add like/favorite interactions to Rails models.",
   "scripts": {
@@ -10,7 +10,12 @@
     "pubpush": "gem push *.gem",
     "release": "release-it"
   },
-  "keywords": [],
+  "keywords": [
+    "rails",
+    "favorite",
+    "interaction",
+    "like"
+  ],
   "author": "afeiship",
   "license": "ISC"
 }
