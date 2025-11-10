@@ -8,7 +8,7 @@ module RailsInteractable
   extend ActiveSupport::Concern
 
   class_methods do
-    # 模型只需声明自己是可互动的即可
+    # 模型只需声明自己是可互动的 (作为 target)
     def acts_as_interactable
       include InstanceMethods
       # 在模型类被加载时，根据全局配置动态定义方法
@@ -17,9 +17,18 @@ module RailsInteractable
       end
     end
 
+    # 模型声明自己是互动的操作者 (operator)
+    def acts_as_operator
+      include OperatorInstanceMethods
+      # 在模型类被加载时，根据全局配置动态定义方法 (operator 角度)
+      RailsInteractable.interaction_types.each do |type, config|
+        define_operator_interaction_methods_for_type(type, config)
+      end
+    end
+
     private
 
-    # 动态定义与特定互动类型相关的方法
+    # 动态定义与特定互动类型相关的方法 (target 角度)
     def define_interaction_methods_for_type(type, config)
       type_sym = type.to_sym
       type_str = type.to_s
@@ -87,6 +96,42 @@ module RailsInteractable
       # 7. 根据配置添加别名等
       if config && config[:alias]
         alias_method config[:alias], "interacted_by_#{type_sym}?"
+      end
+    end
+
+    # 动态定义与特定互动类型相关的方法 (operator 角度)
+    def define_operator_interaction_methods_for_type(type, config)
+      type_sym = type.to_sym
+      type_str = type.to_s
+
+      # 1. 获取操作者发起的特定类型互动的目标对象: TYPEd (e.g., user.liked, user.favorited)
+      define_method "#{type_sym}d" do
+        targets_of_type(type_str)
+      end
+
+      # 1.5. 获取操作者发起的特定类型、特定目标模型的互动对象: TYPEd_of(TargetModel) (e.g., user.liked_of(Post), user.favorited_of(Post))
+      define_method "#{type_sym}d_of" do |target_class|
+        targets_of_type_and_class(type_str, target_class)
+      end
+
+      # 2. 获取操作者发起的特定类型互动的目标对象ID: TYPEd_ids (e.g., user.liked_ids, user.favorited_ids)
+      define_method "#{type_sym}_ids" do
+        target_ids_of_type(type_str)
+      end
+
+      # 2.5. 获取操作者发起的特定类型、特定目标模型的互动对象ID: TYPEd_ids_of(TargetModel) (e.g., user.liked_ids_of(Post), user.favorited_ids_of(Post))
+      define_method "#{type_sym}_ids_of" do |target_class|
+        target_ids_of_type_and_class(type_str, target_class)
+      end
+
+      # 3. 检查操作者是否对某个目标执行了特定类型互动: TYPEd?(target) (e.g., user.liked?(post), user.favorited?(post))
+      define_method "#{type_sym}d?" do |target|
+        interacted_with?(target, type_str)
+      end
+
+      # 4. 获取操作者发起的特定类型互动记录: TYPE_interactions (e.g., user.like_interactions, user.favorite_interactions)
+      define_method "#{type_sym}_interactions" do
+        interactions_of_type(type_str)
       end
     end
   end
@@ -164,6 +209,71 @@ module RailsInteractable
       else
         add_interaction(operator, type)
       end
+    end
+  end
+
+  # 新增：Operator 相关的实例方法
+  module OperatorInstanceMethods
+    # 通用方法：获取操作者发起的特定类型互动
+    def interactions_of_type(type)
+      RailsInteractable::Interaction.where(
+        operator: self,
+        interaction_type: type.to_s
+      )
+    end
+
+    # 通用方法：获取操作者发起的特定类型互动的目标对象
+    def targets_of_type(type)
+      interaction_targets = RailsInteractable::Interaction
+                               .where(operator: self, interaction_type: type.to_s)
+                               .pluck(:target_type, :target_id)
+
+      targets_by_type = interaction_targets.group_by(&:first).transform_values { |group| group.map(&:last).uniq }
+
+      results = []
+      targets_by_type.each do |target_type, target_ids|
+        target_class = target_type.constantize
+        instances = target_class.where(id: target_ids)
+        results.concat(instances)
+      end
+
+      results
+    end
+
+    # 新增：获取操作者发起的特定类型、特定目标模型的互动对象
+    def targets_of_type_and_class(type, target_class)
+      target_class_name = target_class.name
+      interaction_target_ids = RailsInteractable::Interaction
+                                  .where(operator: self, interaction_type: type.to_s, target_type: target_class_name)
+                                  .pluck(:target_id)
+
+      target_class.where(id: interaction_target_ids)
+    end
+
+    # 通用方法：获取操作者发起的特定类型互动的目标对象ID
+    def target_ids_of_type(type)
+      RailsInteractable::Interaction
+        .where(operator: self, interaction_type: type.to_s)
+        .pluck(:target_id)
+        .uniq
+    end
+
+    # 新增：获取操作者发起的特定类型、特定目标模型的互动对象ID
+    def target_ids_of_type_and_class(type, target_class)
+      target_class_name = target_class.name
+      RailsInteractable::Interaction
+        .where(operator: self, interaction_type: type.to_s, target_type: target_class_name)
+        .pluck(:target_id)
+        .uniq
+    end
+
+    # 通用方法：检查操作者是否对某个目标执行了特定类型互动
+    def interacted_with?(target, type)
+      RailsInteractable::Interaction.where(
+        operator: self,
+        target: target,
+        interaction_type: type.to_s
+      ).exists?
     end
   end
 end

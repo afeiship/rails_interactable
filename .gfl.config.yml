@@ -1,4 +1,4 @@
 debug: true
-devBaseBranch: dev
+devBaseBranch: main
 productionBranch: main
 nickname: awesome-gfl

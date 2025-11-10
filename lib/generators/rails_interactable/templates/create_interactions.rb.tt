@@ -1,7 +1,7 @@
 # lib/generators/rails_interactable/templates/create_interactions.rb.tt
 class CreateInteractions < ActiveRecord::Migration[<%= ActiveRecord::VERSION::MAJOR %>.<%= ActiveRecord::VERSION::MINOR %>]
   def change
-    create_table :interactions do |t|
+    create_table :rails_interactions do |t|
       # 使用 interaction_type 而不是 type
       t.string :interaction_type, null: false
       t.references :operator, polymorphic: true, null: false, index: { name: 'index_interactions_on_op_type_and_op_id' }
