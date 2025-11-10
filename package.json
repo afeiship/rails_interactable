@@ -1,6 +1,7 @@
 {
   "name": "rails_interactable",
   "version": "1.0.0",
+  "private": true,
   "description": "Add like/favorite interactions to Rails models.",
   "scripts": {
     "dev": "cd test/dummy && rails server",
